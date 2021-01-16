@@ -1,12 +1,14 @@
 package com.github.alexanderfefelov.bgbilling.servlet.demo
 
+import bitel.billing.server.Server
 import org.apache.log4j.Logger
+import ru.bitel.bgbilling.server.util.ServerUtils
 import ru.bitel.common.logging.NestedContext
 
 import javax.servlet.*
 import javax.servlet.http.HttpServletResponse
 
-class TerryPratchettFilterGroovy implements Filter {
+class UptimePuncherFilterGroovy implements Filter {
 
     @Override
     void init(FilterConfig filterConfig) throws ServletException { wrap({
@@ -24,7 +26,7 @@ class TerryPratchettFilterGroovy implements Filter {
 
         chain.doFilter request, response
         HttpServletResponse httpResponse = (HttpServletResponse) response
-        httpResponse.addHeader "X-Clacks-Overhead", "GNU Terry Pratchett"
+        httpResponse.addHeader "X-BGBilling-Server-Uptime", ServerUtils.uptimeStatus(Server.START_TIME)
     })}
 
     private def wrap(def block) {

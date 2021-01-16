@@ -1,6 +1,10 @@
 package com.github.alexanderfefelov.bgbilling.servlet.demo
 
+import bitel.billing.common.VersionInfo
 import org.apache.log4j.Logger
+import ru.bitel.bgbilling.common.BGException
+import ru.bitel.bgbilling.kernel.module.common.bean.BGModule
+import ru.bitel.bgbilling.kernel.module.server.ModuleCache
 import ru.bitel.common.logging.NestedContext
 
 import javax.servlet.ServletException
@@ -8,7 +12,7 @@ import javax.servlet.http.HttpServlet
 import javax.servlet.http.HttpServletRequest
 import javax.servlet.http.HttpServletResponse
 
-class HelloWorldGroovy extends HttpServlet {
+class SysInfoGroovy extends HttpServlet {
 
     @Override
     void init() throws ServletException { wrap({
@@ -24,7 +28,7 @@ class HelloWorldGroovy extends HttpServlet {
     void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException { wrap({
         logger.trace "doGet"
 
-        response.writer.println "Hello, World!"
+        response.writer.println collectSysInfo()
     })}
 
     @Override
@@ -63,6 +67,35 @@ class HelloWorldGroovy extends HttpServlet {
         super.doTrace request, response
     })}
 
+    private def collectSysInfo() throws BGException, UnknownHostException {
+        [collectModules(), collectRuntime()].join("$NL$NL")
+    }
+
+    private def collectModules() {
+        def kernelVer = VersionInfo.getVersionInfo"server"
+        def buffer = [
+           "Modules$NL$HR$NL",
+           ["0", kernelVer.getModuleName(), kernelVer.getVersionString()].join(SPACE)
+        ]
+        for (module in ModuleCache.getInstance().getModulesList()) {
+            def ver = VersionInfo.getVersionInfo(module.getName())
+            buffer.add([module.getId(), ver.getModuleName(), ver.getVersionString()].join(SPACE))
+        }
+        buffer.join(NL)
+    }
+
+    private def collectRuntime() throws UnknownHostException {
+        [
+            "Runtime$NL$HR$NL",
+            "Hostname/IP address: " + InetAddress.getLocalHost(),
+            "Available processors: " + Runtime.getRuntime().availableProcessors(),
+            "Memory free / max / total, MB: "
+                + Runtime.getRuntime().freeMemory().intdiv(MB) + " / "
+                + Runtime.getRuntime().maxMemory().intdiv(MB) + " / "
+                + Runtime.getRuntime().totalMemory().intdiv(MB)
+        ].join(NL)
+    }
+
     private def wrap(def block) {
         try {
             NestedContext.push(LOG_CONTEXT)
@@ -75,5 +108,10 @@ class HelloWorldGroovy extends HttpServlet {
     private logger = Logger.getLogger(this.getClass())
 
     private static final LOG_CONTEXT = "servlet"
+
+    private final static HR = "--------------------------------------------------"
+    private final static NL = "\n"
+    private final static SPACE = " "
+    private final static MB = 1024 * 1024
 
 }
